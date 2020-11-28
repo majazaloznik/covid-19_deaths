@@ -9,25 +9,25 @@ library(tidyr)
 ###############################################################################
 #### import data ##############################################################
 
-# # uncomment to download
-# sledinlnik = gov data + NIJZ daily entry data
-download.file(paste0("https://raw.githubusercontent.com/",
-                     "sledilnik/data/master/csv/stats.csv"),
-              "data/stats.csv")
+# # # uncomment to download
+# # sledinlnik = gov data + NIJZ daily entry data
+# download.file(paste0("https://raw.githubusercontent.com/",
+#                      "sledilnik/data/master/csv/stats.csv"),
+#               "data/stats.csv")
+# # 
+# # sledilnik = NIJZ daily death data from region table tb5
+# download.file(paste0("https://raw.githubusercontent.com/",
+#                      "sledilnik/data/master/csv/deceased-regions.csv"),
+#               "data/deceased-regions.csv")
 # 
-# sledilnik = NIJZ daily death data from region table tb5
-download.file(paste0("https://raw.githubusercontent.com/",
-                     "sledilnik/data/master/csv/deceased-regions.csv"),
-              "data/deceased-regions.csv")
-
-# NIJZ daily death for 3 different timestamps
-# manually changed text to date in table 12.11....
-download.file("https://www.nijz.si/sites/www.nijz.si/files/uploaded/porocilo_stevilo_potrjenih_primerov_covid-19_25112020_splet.xlsx",
-              "data/25.11.xlsx")
-download.file("https://www.nijz.si/sites/www.nijz.si/files/uploaded/porocilo_stevilo_potrjenih_primerov_covid-19_18112020_splet.xlsx",
-              "data/18.11.xlsx")
-download.file("https://www.nijz.si/sites/www.nijz.si/files/uploaded/porocilo_stevilo_potrjenih_primerov_covid-19_11112020_splet.xlsx",
-              "data/11.11.xlsx")
+# # NIJZ daily death for 3 different timestamps
+# # manually changed text to date in table 12.11....
+# download.file("https://www.nijz.si/sites/www.nijz.si/files/uploaded/porocilo_stevilo_potrjenih_primerov_covid-19_25112020_splet.xlsx",
+#               "data/25.11.xlsx")
+# download.file("https://www.nijz.si/sites/www.nijz.si/files/uploaded/porocilo_stevilo_potrjenih_primerov_covid-19_18112020_splet.xlsx",
+#               "data/18.11.xlsx")
+# download.file("https://www.nijz.si/sites/www.nijz.si/files/uploaded/porocilo_stevilo_potrjenih_primerov_covid-19_11112020_splet.xlsx",
+#               "data/11.11.xlsx")
 
 # import 
 sledilnik <- read_csv("data/stats.csv")
@@ -87,6 +87,8 @@ df %>%  left_join(nijz.regions) %>%
          no1 = ifelse(date < "2020-11-11", replace_na(no1, 0), no1),
          no2 = ifelse(date < "2020-11-18", replace_na(no2, 0), no2),
          no3 = ifelse(date < "2020-11-25", replace_na(no3, 0), no3)) -> df
+
+
 
 ###############################################################################
 #### plot cumulative gov vs NIJZ ##############################################
@@ -211,7 +213,7 @@ png(filename="figures/threeNIJZgov.png", 800, 480)
      xlab = "",
      ylab = "",
      ylim = c(0,60),
-     xlim = as.Date(c("2020-09-10", "2020-11-26")),
+     xlim = as.Date(c("2020-03-10", "2020-11-26")),
      axes = FALSE, 
      lty = 1, lwd = 2, col = "blue")
 axis.Date(1, at = seq(df$date[1], df$date[length(df$date)]+10, by = "2 week"),
@@ -247,7 +249,7 @@ plot(df$date, df$no1.cum, type = "l",
      xlab = "",
      ylab = "",
      ylim = c(0,1300),
-     xlim = as.Date(c("2020-09-10", "2020-11-26")),
+     xlim = as.Date(c("2020-03-10", "2020-11-26")),
      axes = FALSE, 
      lty = 1, lwd = 2, col = "blue")
 axis.Date(1, at = seq(df$date[1], df$date[length(df$date)]+10, by = "2 week"),
@@ -272,7 +274,28 @@ mtext(side = 2, line = 3,   cex = 1,"skupno število umrlih")
 mtext(side = 1, line = 2.5,   cex = 1, "datum")
 dev.off()
 
+###############################################################################
+# check if gov is ever > NIJZ in cumulative
+df %>% 
+  mutate(check = ifelse(no1.cum < state.deceased.todate, 1, 0),
+         diff = no1.cum - state.deceased.todate) -> check
 
+png(filename="figures/delta.png", 800, 480)
 
+plot(check$date, check$diff, type = "l",
+     xlab = "",
+     ylab = "",
+     #ylim = c(0,800),
+     xlim = as.Date(c("2020-03-13", "2020-11-27")),
+     axes = FALSE, 
+     lty = 1, lwd = 2, col = "red")
+axis.Date(1, at = seq(df$date[1], df$date[length(df$date)]+10, by = "2 week"),
+          format = "%d.%m.")
+
+axis(2, las = 2)
+abline(h = 0)
+mtext(side = 3, line = 1.2,  adj = 0, cex = 1.2,
+      "Kumulativa umrlih po NIJZ minus kumulativa vlade")
+dev.off()
 
 
