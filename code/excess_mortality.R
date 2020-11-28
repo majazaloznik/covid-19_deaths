@@ -60,14 +60,14 @@ left_join(df.5, covid)  %>%
   mutate(excess = (`2020` / mean - 1 ) * 100,
          covid = (daily / mean) * 100) -> df
   
-  
+write_csv(df, "outputs/excess_mortality.csv")
 ###############################################################################
 ## plot 
 ###############################################################################
 # inspiration: https://www.economist.com/graphic-detail/2020/07/15/tracking-covid-19-excess-deaths-across-countries
 # https://github.com/TheEconomist/covid-19-excess-deaths-tracker
 
-png(filename="figures/ecxcess-15-19-baseline.png", 800, 480)
+# png(filename="figures/ecxcess-15-19-baseline.png", 800, 480)
 par(mar = c(4, 4, 4, 1.5) + 0.1)
 plot(df$month, df$excess, type = "n",
      xlab = "",
@@ -97,6 +97,5 @@ legend(1, 46,
 legend(1.25, 40,
        legend=c( "Deaths attributed to Covid-19"),
        bty = "n", cex = 0.9, fill ="bisque1", border = "bisque1")
-
-dev.off()
+# dev.off()
 
