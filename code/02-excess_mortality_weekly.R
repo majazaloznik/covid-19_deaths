@@ -96,7 +96,7 @@ crp.weekly %>%
          low = (low.ci / mean - 1 ) * 100,
          hi = (hi.ci / mean - 1 ) * 100) -> df
 
-
+write_csv(df, "outputs/weekly.excess.deaths.csv")
   
 ###############################################################################
 ## plot - weekly
@@ -176,6 +176,7 @@ crp.monthly %>%
          low = (low.ci / mean - 1 ) * 100,
          hi = (hi.ci / mean - 1 ) * 100) -> df.m
 
+write_csv(df.m, "outputs/monthly.excess.deaths.csv")
 
 ###############################################################################
 ## plot - monthly
