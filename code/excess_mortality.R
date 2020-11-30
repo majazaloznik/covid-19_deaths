@@ -15,7 +15,7 @@ library(lubridate)
 # download.file(paste0("https://raw.githubusercontent.com/",
 #                      "sledilnik/data/master/csv/monthly_deaths_slovenia.csv"),
 #               "data/monthly_deaths_slovenia.csv")
-#
+# 
 # # sledinlnik = gov data + NIJZ daily entry data
 # download.file(paste0("https://raw.githubusercontent.com/",
 #                      "sledilnik/data/master/csv/stats.csv"),
@@ -33,14 +33,14 @@ sledilnik %>%
   mutate(covid.deaths = diff(c(0, state.deceased.todate))) %>% 
   mutate(month = as.numeric(format(date, "%m"))) %>%
   group_by(month) %>%
-  summarise(covid.deaths = sum(covid.deaths)) -> covid
+  summarise(covid.deaths = sum(covid.deaths, na.rm = TRUE)) -> covid.m
 
 st <- as.Date("2020-02-01")
 en <- as.Date("2020-11-01")
 t <-days_in_month(seq(st, en, by = "1 month"))
 
 # normalize to daily
-covid %>% 
+covid.m %>% 
   dplyr::mutate(daily  = covid.deaths / t ) -> covid
 
 st <- as.Date("1977-01-01")
@@ -55,6 +55,16 @@ surs %>%
   select(month, `2015`:`2020`) %>% 
   mutate(mean = rowMeans(.[,2:6]))   -> df.5
 
+df.5 %>% 
+  mutate_at(vars(2:7), list(rel = function(x) x / .[[8]])) -> x
+
+
+surs %>% 
+  dplyr::mutate(month = as.numeric(month)) %>% 
+  spread(year, deceased) -> x
+  select(month, `2015`:`2020 `) %>% 
+  mutate(mean = rowMeans(.[,2:6]))   -> df.5
+
 # join and calculate perncent excess 
 left_join(df.5, covid)  %>% 
   mutate(excess = (`2020` / mean - 1 ) * 100,
@@ -67,7 +77,7 @@ write_csv(df, "outputs/excess_mortality.csv")
 # inspiration: https://www.economist.com/graphic-detail/2020/07/15/tracking-covid-19-excess-deaths-across-countries
 # https://github.com/TheEconomist/covid-19-excess-deaths-tracker
 
-# png(filename="figures/ecxcess-15-19-baseline.png", 800, 480)
+png(filename="figures/ecxcess-15-19-baseline.png", 800, 480)
 par(mar = c(4, 4, 4, 1.5) + 0.1)
 plot(df$month, df$excess, type = "n",
      xlab = "",
@@ -78,7 +88,7 @@ plot(df$month, df$excess, type = "n",
 axis(1, at = 1:12, labels = c(month.abb[1:10], paste0(month.abb[11], "*"), month.abb[12] ))
 axis(2, las = 2, at =  seq(0,60, by = 10),labels = paste0(seq(0,60, by = 10), " %"))
 abline(h = seq(0,60, 10), col = "gray", lty = "93", )
-polygon(c(3, 4:11, 11), c(0, df$covid[4:11], 0),
+polygon(c(2, 3:11, 11), c(0, df$covid[3:11], 0),
         col = "bisque1", border = "bisque1")
 lines(c(1,12), c(0,0))
 lines(df$month, df$excess,   lwd = 3, col = "red3")
@@ -97,5 +107,5 @@ legend(1, 46,
 legend(1.25, 40,
        legend=c( "Deaths attributed to Covid-19"),
        bty = "n", cex = 0.9, fill ="bisque1", border = "bisque1")
-# dev.off()
+dev.off()
 
