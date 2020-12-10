@@ -9,20 +9,44 @@ library(lubridate)
 
 ###############################################################################
 ## clean  for API
-###############################################################################
-# 
+##############################################################################
+
 # x <- read_excel("data/št. UMRLI_2010_2020_1.xls")
 # 
-# x %>% 
-#   filter(! is.na(Dan)) %>% 
-#   rename(date = Dan, deceased = "št. na Dan") %>% 
-#   select(date, deceased) %>% 
-#   mutate(date = as.Date(date, "Y%-m%-d%"))-> csv
+# x %>%
+#   filter(! is.na(Dan)) %>%
+#   rename(date = Dan, deceased = "št. na Dan") %>%
+#   select(date, deceased) %>%
+#   mutate(date = as.Date(date, "Y%-m%-d%")) %>%
+#   filter(date < "2020-11-23") -> csv
 # 
 # write_csv(csv, "data/daily_deaths_slovenia.csv")
 # 
 # write.table(round(as.numeric(Sys.time()), 0), "data/daily_deaths_slovenia.timestamp",
 #             row.names = FALSE, col.names = FALSE)
+# 
+
+new <- read_excel("data/št. UMRLI po mesecih-dnevih-letih-(1.1.2020-7.12.2020).xls")
+
+new %>%
+  filter(! is.na(Dan)) %>%
+  rename(date = Dan, deceased = "št. na Dan") %>%
+  select(date, deceased) %>%
+  mutate(date = as.Date(date, "Y%-m%-d%")) %>%
+  filter(date < "2020-11-30") %>% 
+  mutate(deceased = as.numeric(deceased))-> new.csv
+
+
+old <- read_csv("data/daily_deaths_slovenia.csv")
+
+old %>% 
+  filter(date < "2020-01-01") %>% 
+  bind_rows(new.csv) -> update
+
+write_csv(update, "data/daily_deaths_slovenia.csv")
+
+write.table(round(as.numeric(Sys.time()), 0), "data/daily_deaths_slovenia.timestamp",
+            row.names = FALSE, col.names = FALSE)
 
 
 ###############################################################################
@@ -54,7 +78,7 @@ crp <- read_csv("data/daily_deaths_slovenia.csv")
 sledilnik %>% 
   select(date, state.deceased.todate) %>% 
   mutate(covid = diff(c(0, state.deceased.todate))) %>% 
-  mutate(week = week(date)) %>% 
+  mutate(week = isoweek(date)) %>% 
   group_by(week) %>%
   summarise(covid = sum(covid, na.rm = TRUE),
             days = n(),
@@ -66,7 +90,7 @@ max.week <- max(covid.weekly$week)
 
 crp %>% 
   mutate(year = year(date),
-         week = week(date)) %>% 
+         week = isoweek(date)) %>% 
   group_by(year, week) %>%
   summarise(deceased = sum(deceased),
             days = n(),
@@ -79,6 +103,8 @@ crp.weekly %>%
   filter(year > 2014 & year < 2020) %>% 
   group_by(week) %>% 
   summarise(mean = mean(daily.deceased),
+            min = min(daily.deceased),
+            max = max(daily.deceased),
          sd = sd(daily.deceased),
          se = sd/sqrt(5),
          low.ci = mean - qt(1 - (0.05 / 2), 5 -1 ) * se,
@@ -94,7 +120,9 @@ crp.weekly %>%
   mutate(excess = (daily.deceased.2020 / mean - 1 ) * 100,
          covid = (daily.covid / mean) * 100,
          low = (low.ci / mean - 1 ) * 100,
-         hi = (hi.ci / mean - 1 ) * 100) -> df
+         hi = (hi.ci / mean - 1 ) * 100,
+         min = (min / mean - 1 ) * 100,
+         max = (max / mean - 1 ) * 100) -> df
 
 write_csv(df, "outputs/weekly.excess.deaths.csv")
   
@@ -130,6 +158,37 @@ mtext(side = 1, line = 2.5,  cex = 0.9,
       "week")
 dev.off()
 
+###############################################################################
+## plot - weekly wiht min&max
+###############################################################################
+
+png(filename="figures/weekly.min.max.ecxcess-15-19-baseline.png", 800, 480)
+par(mar = c(4, 1, 4, 4.5) + 0.1)
+plot(df$week, df$excess, type = "n",
+     xlab = "",
+     ylab = "",
+     ylim = c(-20,100),
+     axes = FALSE)
+
+axis(1, )
+axis(4, las = 2, at =  seq(-20,100, by = 10),labels = paste0(seq(-20,100, by = 10), " %"))
+
+abline(h = seq(-20,100, 10), col = "gray", lty = "93", )
+polygon(c(min.week - 1, min.week:max.week, max.week), c(0, df$covid[8:48], 0),
+        col = "bisque1", border = "bisque1")
+lines(df$week, df$min,   lwd = 3, col = "gray", lty = 3)
+lines(df$week, df$max,   lwd = 3, col = "gray", lty = 3)
+
+lines(c(1,52), c(0,0))
+lines(df$week, df$excess,   lwd = 3, col = "red3")
+
+mtext(side = 3, line = 1.5,  adj = 0, cex = 1.1,
+      "weekly excess mortality relative to historical baseline and Covid-19 attributed deaths")
+mtext(side = 3, line = 0.5,  adj = 0, cex = 0.9,
+      "(based on simple average over 2015-2019 with minimum and maximum in gray)")
+mtext(side = 1, line = 2.5,  cex = 0.9,
+      "week")
+dev.off()
 
 ###############################################################################
 # clean and join data - monthly
