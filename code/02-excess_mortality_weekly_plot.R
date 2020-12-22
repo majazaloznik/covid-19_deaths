@@ -63,12 +63,7 @@ crp.weekly %>%
   group_by(week) %>% 
   summarise(mean = mean(daily.deceased),
             min = min(daily.deceased),
-            max = max(daily.deceased),
-            sd = sd(daily.deceased),
-            se = sd/sqrt(5),
-            low.ci = mean - qt(1 - (0.05 / 2), 5 -1 ) * se,
-            hi.ci = mean + qt(1 - (0.05 / 2), 5 - 1) * se) %>% 
-  select(-se, -sd) ->    crp.weekly.5y
+            max = max(daily.deceased)) ->    crp.weekly.5y
 
 # merge with covid data calculate ratios and clean up
 crp.weekly %>% 
@@ -78,44 +73,12 @@ crp.weekly %>%
   left_join(covid.weekly) %>% 
   mutate(excess = (daily.deceased.2020 / mean - 1 ) * 100,
          covid = (daily.covid / mean) * 100,
-         low = (low.ci / mean - 1 ) * 100,
-         hi = (hi.ci / mean - 1 ) * 100,
          min = (min / mean - 1 ) * 100,
          max = (max / mean - 1 ) * 100) -> df
 
 write_csv(df, "outputs/weekly.excess.deaths.csv")
 
-###############################################################################
-## plot - weekly
-###############################################################################
 
-png(filename="figures/weekly.ecxcess-15-19-baseline.png", 800, 480)
-par(mar = c(4, 1, 4, 4.5) + 0.1)
-plot(df$week, df$excess, type = "n",
-     xlab = "",
-     ylab = "",
-     ylim = c(-20,100),
-     axes = FALSE)
-
-axis(1, )
-axis(4, las = 2, at =  seq(-20,100, by = 10),labels = paste0(seq(-20,100, by = 10), " %"))
-
-abline(h = seq(-20,100, 10), col = "gray", lty = "93", )
-polygon(c(min.week - 1, min.week:max.week, max.week), c(0, df$covid[!is.na(df$covid)], 0),
-        col = "bisque1", border = "bisque1")
-lines(df$week, df$low,   lwd = 3, col = "gray", lty = 3)
-lines(df$week, df$hi,   lwd = 3, col = "gray", lty = 3)
-
-lines(c(1,52), c(0,0))
-lines(df$week, df$excess,   lwd = 3, col = "red3")
-
-mtext(side = 3, line = 1.5,  adj = 0, cex = 1.1,
-      "weekly excess mortality relative to historical baseline and Covid-19 attributed deaths")
-mtext(side = 3, line = 0.5,  adj = 0, cex = 0.9,
-      "(based on simple average over 2015-2019 with 95% confidence intervals in gray)")
-mtext(side = 1, line = 2.5,  cex = 0.9,
-      "week")
-dev.off()
 
 ###############################################################################
 ## plot - weekly wiht min&max
@@ -178,11 +141,8 @@ crp.monthly %>%
   filter(year > 2014 & year < 2020) %>% 
   group_by(month) %>% 
   summarise(mean = mean(daily.deceased),
-            sd = sd(daily.deceased),
-            se = sd/sqrt(5),
-            low.ci = mean - qt(1 - (0.05 / 2), 5 -1 ) * se,
-            hi.ci = mean + qt(1 - (0.05 / 2), 5 - 1) * se) %>% 
-  select(-se, -sd) ->    crp.monthly.5y
+            min = min(daily.deceased),
+            max = max(daily.deceased)) ->    crp.monthly.5y
 
 crp.monthly %>% 
   filter(year == 2020 ) %>% 
@@ -191,8 +151,8 @@ crp.monthly %>%
   left_join(covid.monthly) %>% 
   mutate(excess = (daily.deceased.2020 / mean - 1 ) * 100,
          covid = (daily.covid / mean) * 100,
-         low = (low.ci / mean - 1 ) * 100,
-         hi = (hi.ci / mean - 1 ) * 100) -> df.m
+         min = (min / mean - 1 ) * 100,
+         max = (max / mean - 1 ) * 100) -> df.m
 
 write_csv(df.m, "outputs/monthly.excess.deaths.csv")
 
@@ -205,17 +165,17 @@ par(mar = c(4, 2, 4, 4.5) + 0.1)
 plot(df.m$month, df.m$excess, type = "n",
      xlab = "",
      ylab = "",
-     ylim = c(-10,60),
+     ylim = c(-10,90),
      axes = FALSE)
 
 axis(1, at = 1:12, labels = c(month.abb[1:10], paste0(month.abb[11], "*"), month.abb[12] ))
 axis(4, las = 2, at =  seq(-10,60, by = 10),labels = paste0(seq(-10,60, by = 10), " %"))
 abline(h = seq(-10,60, 10), col = "gray", lty = "93", )
-polygon(c(2, 3:11, 11), c(0, df.m$covid[3:11], 0),
+polygon(c(2, 3:12, 12), c(0, df.m$covid[3:12], 0),
         col = "bisque1", border = "bisque1")
 lines(c(1,12), c(0,0))
-lines(df.m$month, df.m$low,   lwd = 3, col = "gray", lty = 3)
-lines(df.m$month, df.m$hi,   lwd = 3, col = "gray", lty = 3)
+lines(df.m$month, df.m$min,   lwd = 3, col = "gray", lty = 3)
+lines(df.m$month, df.m$max,   lwd = 3, col = "gray", lty = 3)
 lines(df.m$month, df.m$excess,   lwd = 3, col = "red3")
 
 mtext(side = 3, line = 1.5,  adj = 0, cex = 1.1,
@@ -223,7 +183,7 @@ mtext(side = 3, line = 1.5,  adj = 0, cex = 1.1,
 mtext(side = 3, line = 0.5,  adj = 0, cex = 0.9,
       "(based on simple average over 2015-2019)")
 mtext(side = 1, line = 2.5,  adj = 0, cex = 0.8,
-      "* Data for November are incomplete")
+      "* Data for December are incomplete")
 # dev.off()
 
 
