@@ -52,7 +52,7 @@ x %>%
          deceased != 0) %>%
   mutate(age = substring(age, 1,1),
          date = as.Date(date, "%d/%m/%Y"),
-         ageg = recode(age, `1` = "0-3",
+         age.group = recode(age, `1` = "0-3",
                        `2` = "4-18",
                        `3` = "19-31",
                        `4` = "32-41",
@@ -68,7 +68,7 @@ min.date <- min(temp.df$date)
 temp.df %>% 
   mutate(sex = recode(sex, "M" = "deceased.age.male", 
                       "Ž" = "deceased.age.female")) %>% 
-  unite(group, sex, ageg, sep = ".", remove = FALSE) -> df
+  unite(group, sex, age.group, sep = ".", remove = FALSE) -> df
 
 # get correct column order
 df %>%
@@ -79,11 +79,12 @@ df %>%
 # shape and clean into long table format and add regions from dictionary
 temp.df %>% 
   mutate(sex = recode(sex, "M" = "M",  "Ž" = "F")) %>% 
-  select(date, ue, sex, ageg, deceased) %>% 
+  select(date, ue, sex, age.group, deceased) %>% 
   left_join(dict, by = c("ue" = "ue.name")) %>% 
   relocate(region.code, .after=date) %>% 
   relocate(region.name, .after=region.code) %>% 
-  relocate(ue.id, .after=region.name) -> long.df
+  relocate(ue.id, .after=region.name) %>% 
+  rename(ue.name = ue) -> long.df
 
 # collapse areas
 df %>%
@@ -117,7 +118,7 @@ write.table(round(as.numeric(Sys.time()), 0),
 ###############################################################################
 
 if (update) {
-  old <- read_csv("outputs/daily_deaths_slovenia.csv")
+  old <- read_csv("../data/csv/daily_deaths_slovenia.csv")
   old %>% 
     filter(date < min.date ) %>% 
     bind_rows(collapsed.df) -> collapsed.df}
@@ -131,7 +132,7 @@ write.table(round(as.numeric(Sys.time()), 0),
 # append/overwrite existing file by age
 ###############################################################################
 if (update) {
-  old <- read_csv("outputs/daily_deaths_slovenia_by_age.csv", 
+  old <- read_csv("../data/csv/daily_deaths_slovenia_by_age.csv", 
                   col_types = c(date = "D", .default = "n"))
   old %>% 
     filter(date < min.date) %>% 

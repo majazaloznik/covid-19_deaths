@@ -51,10 +51,10 @@ map1 %>%
   relocate(region.code, .after = region.id) -> ue.reg
 
 # get ue names from long table
-ue.names <- read_csv("outputs/age_admin_area_daily_deaths_slovenia.csv")
+ue.names <- read_csv("../data/csv/daily_deaths_slovenia_by_age_sex_and_admin_area.csv")
 
 ue.names %>% 
-  pull(ue) %>% 
+  pull(ue.name) %>% 
   unique() %>% 
   as.data.frame() %>% 
   setNames("ue.name")-> ue.names
