@@ -10,6 +10,9 @@ library(ggplot2)
 library(gganimate)
 library(gifski)
 library(RColorBrewer)
+library(tmap)
+library(rgdal)
+library(classInt)
 
 ###############################################################################
 # metadata
@@ -102,5 +105,69 @@ animate(h, duration = 10, fps = 15, width = 600, height = 400,
 anim_save("hist.gif")
 
 
-plot_sf(ue)
+
+###############################################################################
+# base graphics plot
+###############################################################################
+
+# prepare for plotting in base
+shp <- readOGR(dsn = "data/UE", layer = "UE")
+
+excess %>% 
+  select(month, area, excess) %>% 
+  spread(month, excess) -> df
+
+shp@data <- left_join(shp@data, df , by = c("UE_UIME" = "area")) 
+
+
+FunPalette <- function (x, bin.n=11, col.scheme="Spectral", style="pretty"){
+  bins <- classIntervals(x, n=bin.n, style=style)
+  brbg <- brewer.pal(11,  col.scheme)
+  col <- c(colorRampPalette(c(brbg[4], brbg[6]))(2), 
+            colorRampPalette(c(brbg[6], brbg[11]))(8)[-1])
+  pal <- brewer.pal(length(bins$brks)-1, col.scheme)
+  col <- findColours(bins, pal)
+  pal.names <- paste(round(bins$brks[-length(bins$brks)],2), 
+                     round(bins$brks[-1], 2), sep= " - ")
+  pal.n.from <- round(bins$brks[-length(bins$brks)],2)
+  pal.n.to <- round(bins$brks[-1],2)
+  return(list(col, pal, pal.names, pal.n.from, pal.n.to, bins$brks, bins))
+}
+
+FunLegend <- function(palette=FunPalette){
+  plot(c(0,1), c(0,1),  col = NA, ann = FALSE, axes = FALSE)
+  points(rep(0.3,length(palette[[2]])), 1/length(palette[[2]])*
+           seq(1, length(palette[[2]])),pch=15, col=palette[[2]], cex=2)   
+  points(rep(0.3,length(palette[[2]])),1/length(palette[[2]])*
+           seq(1, length(palette[[2]])),pch=0, lwd=1, cex=2)
+  text(rep(0.6,length(palette[[2]])), 1/length(palette[[2]])*
+         seq(1, length(palette[[2]])), palette[[3]])
+}
+
+
+ii <- cut(shp@data$januar, breaks =pal[[7]], max(values), len = 100, include.lowest = TRUE)
+
+## Use bin indices, ii, to select color from vector of n-1 equally spaced colors
+colors <- colorRampPalette(c("lightblue", "blue"))(99)[ii]
+
+pal <- FunPalette(unlist(shp@data[11:22]))
+oldpar <- par(no.readonly=TRUE)
+par(mar=c(2,0,0,4)) 
+plot(shp, col = findColours(pal[[7]], pal[[2]]))
+
+leftX <- 0.65 # position variable density distribution
+rightX <- 1
+bottomY <- 0.05
+par(fig=c(leftX,rightX,bottomY, bottomY+rightX-leftX), new =TRUE,mar=c(2,1,0,0))
+
+plot(density(shp@data$januar, na.rm=TRUE), 
+     axes=FALSE, ann=FALSE, lwd=2,
+     xlim = range(pal[[6]]))
+axis(1)
+abline(v=pal[[6]], col="red", lty=2) 
+
+bottomY <- bottomY+rightX-leftX # position legend above dens.
+par(fig=c(leftX+0.15,rightX,bottomY, bottomY+rightX-leftX),mar=c(0,0,0,0), new =TRUE)
+FunLegend(pal)
+par(oldpar)
 
