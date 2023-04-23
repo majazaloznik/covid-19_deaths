@@ -30,8 +30,8 @@ library(lubridate)
 update <- file.exists("../../data/csv/daily_deaths_slovenia_by_age_sex_and_admin_area.csv")
 
 # read new data CHANGE NAME and last date!!!
-x <- read_csv("data/UMRLI po DNEVIH-STAROSTNIH SKUPINAH-SPOLU--(od-do)-po UE VPISA(1.1.2010-11.03.2021).csv")
-max.date <- "2021-03-21"
+x <- read_csv("data/SLEDILNIK-COVID_19(2.4.2023)/UMRLI po DNEVIH-STAROSTNIH SKUPINAH-SPOLU--(od-do)-VIRŠČEK-po UE VPISA(1.1.2010-2.4.2023).csv")
+max.date <- "2023-03-20"
 
 # read administrative area dictionary
 dict <- read_csv("../../data/csv/dict-administrative_areas.csv")
@@ -143,5 +143,4 @@ if (update) {
 write_csv(age.df, "../../data/csv/daily_deaths_slovenia_by_age.csv", na = "")
 write.table(round(as.numeric(Sys.time()), 0), "../../data/csv/daily_deaths_slovenia_by_age.csv.timestamp",
             row.names = FALSE, col.names = FALSE)
-
 
